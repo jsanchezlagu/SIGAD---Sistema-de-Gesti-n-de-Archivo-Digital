@@ -1,0 +1,66 @@
+:root{--azul:#0f2d5c;--azul2:#1e40af;--gris:#e2e8f0;--ok:#15803d;--warn:#b45309;--bad:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,system-ui,Arial,sans-serif;background:#f1f5f9;color:#0f172a}
+a{text-decoration:none;color:inherit}
+
+/* ---------- LOGIN ---------- */
+.login-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.login-bg{position:absolute;inset:0;background-size:cover;background-position:center;
+  filter:brightness(.55);background-color:#0f2d5c}
+.login-box{position:relative;z-index:2;width:340px;background:#fff;border-radius:14px;
+  padding:28px 26px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.logo-login{width:84px;height:84px}
+.login-box h1{margin:6px 0 0;font-size:30px;color:var(--azul);letter-spacing:2px}
+.sub{font-size:13px;color:#475569;margin:4px 0 18px}
+.sub b{color:var(--azul)}
+.login-box label{display:block;text-align:left;font-size:12px;font-weight:600;
+  color:#334155;margin:10px 0 4px}
+.login-box input{width:100%;padding:10px;border:1px solid var(--gris);border-radius:8px;font-size:14px}
+.btn{width:100%;margin-top:16px;padding:11px;border:0;border-radius:8px;background:var(--azul);
+  color:#fff;font-weight:700;cursor:pointer;font-size:15px}
+.btn:hover{background:var(--azul2)}
+.login-err{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:9px 12px;
+  border-radius:7px;font-size:13px;margin:10px 0}
+.pie-login{margin-top:18px;font-size:11px;color:#94a3b8}
+
+/* ---------- APP ---------- */
+.app{display:flex;min-height:100vh}
+.side{position:fixed;top:0;left:0;bottom:0;width:230px;flex-shrink:0;
+  background:var(--azul);color:#fff;display:flex;flex-direction:column;padding:16px;
+  overflow-y:auto;z-index:10}
+.marca{display:flex;gap:10px;align-items:center;padding-bottom:14px;border-bottom:1px solid #ffffff22}
+.marca img{width:40px;height:40px}
+.marca h2{margin:0;font-size:20px;letter-spacing:2px}
+.muni{font-size:10px;color:#cbd5e1;line-height:1.3}
+.nav{display:flex;flex-direction:column;margin-top:14px;gap:2px}
+.nav a{padding:10px 12px;border-radius:8px;color:#dbeafe;font-size:14px;white-space:nowrap}
+.nav a:hover{background:#ffffff1a}
+.nav a.on{background:#fff;color:var(--azul);font-weight:700}
+.me{margin-top:auto;font-size:13px;color:#dbeafe;padding-top:14px;border-top:1px solid #ffffff22}
+.main{margin-left:230px;flex:1;padding:24px;overflow:auto;min-height:100vh}
+.top{display:flex;align-items:baseline;gap:14px;margin-bottom:18px}
+.top h1{margin:0;font-size:24px;color:var(--azul)}
+.muted{color:#64748b;font-size:13px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px #0f172a10}
+.kpi b{display:block;font-size:26px;color:var(--azul)}
+.kpi span{font-size:12px;color:#64748b}
+.card{background:#fff;border-radius:12px;padding:18px;box-shadow:0 2px 8px #0f172a10;margin-top:8px}
+.card h3{margin:0 0 12px;font-size:15px;color:var(--azul)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:#64748b;font-weight:600;border-bottom:2px solid var(--gris);padding:8px}
+td{padding:8px;border-bottom:1px solid #f1f5f9}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.t-ok{background:#dcfce7;color:var(--ok)} .t-warn{background:#fef3c7;color:var(--warn)}
+.t-info{background:#dbeafe;color:var(--azul2)} .t-bad{background:#fee2e2;color:var(--bad)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.row>div{display:flex;flex-direction:column;gap:4px}
+.row label{font-size:12px;font-weight:600;color:#334155}
+.row input,.row select{padding:9px;border:1px solid var(--gris);border-radius:8px;font-size:14px}
+.btn-sm{display:inline-block;padding:8px 14px;border:0;border-radius:8px;background:var(--azul);
+  color:#fff;font-weight:600;cursor:pointer;font-size:13px}
+.btn-sm:hover{background:var(--azul2)}
+.btn-gray{background:#e2e8f0;color:#334155}
+.banner{background:#dbeafe;color:var(--azul2);border:1px solid #bfdbfe;padding:12px 16px;
+  border-radius:10px;font-size:14px;margin-bottom:14px}
