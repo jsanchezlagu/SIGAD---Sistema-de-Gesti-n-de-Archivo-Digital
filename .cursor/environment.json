@@ -1,0 +1,17 @@
+{
+  "name": "SIGAD (PHP + MariaDB)",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "php-server",
+      "command": "php -S 0.0.0.0:8080 -t ."
+    }
+  ],
+  "ports": [
+    {
+      "name": "SIGAD web",
+      "port": 8080
+    }
+  ]
+}
