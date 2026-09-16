@@ -328,3 +328,55 @@ function tokens_en(string $campo, string $q): bool {
     }
     return $ok;
 }
+
+/**
+ * Sugerencias rápidas mientras se escribe (sin escanear el texto del PDF).
+ * Prefijo de CUI/EXP primero, luego nombre de proyecto.
+ *
+ * @return list<array{id:int,nro:string,cui:string,titulo:string,anio:int,origen:string}>
+ */
+function sugerencias_expedientes(PDO $db, string $q, bool $soloAprobados, int $limite = 8): array {
+    $q = trim($q);
+    if (mb_strlen($q) < 2) return [];
+    $like = '%' . $q . '%';
+    $pref = $q . '%';
+    $cuiN = preg_replace('/[^A-Za-z0-9]/', '', $q) ?? '';
+    $cuiL = $cuiN !== '' ? '%' . $cuiN . '%' : $like;
+    $limite = max(1, min(15, $limite));
+
+    $where = ['1=1'];
+    $params = [];
+    if ($soloAprobados) $where[] = "e.estado = 'APROBADO'";
+    $where[] = "(e.nro_expediente LIKE ? OR e.cui LIKE ?
+                 OR REPLACE(REPLACE(e.cui,'-',''),' ','') LIKE ?
+                 OR e.nombre_proyecto LIKE ? OR e.asunto LIKE ?)";
+    array_push($params, $like, $like, $cuiL, $like, $like);
+    $sqlWhere = implode(' AND ', $where);
+
+    $sql = "SELECT e.id, e.nro_expediente, e.cui, e.nombre_proyecto, e.asunto, e.anio
+            FROM expedientes e
+            WHERE $sqlWhere
+            ORDER BY
+              CASE
+                WHEN e.cui LIKE ? OR e.nro_expediente LIKE ? THEN 0
+                WHEN e.nombre_proyecto LIKE ? THEN 1
+                ELSE 2
+              END,
+              e.creado_en DESC
+            LIMIT $limite";
+    $st = $db->prepare($sql);
+    $st->execute(array_merge($params, [$pref, $pref, $pref]));
+    $out = [];
+    foreach ($st->fetchAll() as $r) {
+        $titulo = trim((string)($r['nombre_proyecto'] !== '' ? $r['nombre_proyecto'] : $r['asunto']));
+        $out[] = [
+            'id'     => (int)$r['id'],
+            'nro'    => (string)$r['nro_expediente'],
+            'cui'    => (string)$r['cui'],
+            'titulo' => $titulo,
+            'anio'   => (int)$r['anio'],
+            'origen' => origen_coincidencia($r, $q) ?: 'proyecto',
+        ];
+    }
+    return $out;
+}

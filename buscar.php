@@ -3,6 +3,11 @@ require_once 'config/config.php';
 requiere_login();
 $db = db();
 
+if (isset($_GET['sugerencias'])) {
+    $term = trim((string)($_GET['q'] ?? ''));
+    json_out(['ok' => true, 'items' => sugerencias_expedientes($db, $term, es_consulta())]);
+}
+
 $q    = trim((string)($_GET['q'] ?? ''));
 $pab  = trim((string)($_GET['pab'] ?? ''));
 $anio = trim((string)($_GET['anio'] ?? ''));
@@ -57,11 +62,15 @@ function buscar_qs(array $extra = []): string {
   <div class="top"><h1>Buscar expediente</h1></div>
   <div class="card">
     <p class="ayuda">Busque por <b>nombre del proyecto</b>, <b>CUI</b>, número de expediente, asunto o una palabra que aparezca dentro del PDF digitalizado.</p>
-    <form method="get">
+    <form method="get" id="frm-buscar" autocomplete="off">
     <div class="row">
       <div class="grow"><label>Proyecto, CUI, expediente o texto del documento</label>
-        <input name="q" placeholder="Ej. Plaza de Armas · CUI 2445678 · EXP-2024-000123"
-               value="<?= htmlspecialchars($q) ?>" autofocus></div>
+        <div class="ac-wrap">
+          <input name="q" id="q" placeholder="Ej. Plaza de Armas · CUI 2445678 · EXP-2024-000123"
+                 value="<?= htmlspecialchars($q) ?>" autofocus autocomplete="off"
+                 aria-autocomplete="list" aria-controls="ac-list" aria-expanded="false">
+          <ul id="ac-list" class="ac-list" hidden role="listbox"></ul>
+        </div></div>
       <div><label>Pabellón</label>
         <select name="pab"><option value="">Todos</option>
           <?php foreach ($pabs as $p): ?>
@@ -134,4 +143,77 @@ function buscar_qs(array $extra = []): string {
     <?php endif; ?>
     <?php endif; ?>
   </div>
-</main></body></html>
+</main>
+<script>
+(function(){
+  var inp = document.getElementById('q');
+  var list = document.getElementById('ac-list');
+  if (!inp || !list) return;
+  var t = null, ac = null, items = [], sel = -1;
+  var etiq = {codigo:'CUI / expediente', proyecto:'Proyecto', asunto:'Asunto', documento:'PDF'};
+
+  function cerrar(){
+    list.hidden = true; list.innerHTML = ''; items = []; sel = -1;
+    inp.setAttribute('aria-expanded','false');
+  }
+  function ir(i){
+    if (!items[i]) return;
+    window.location = 'documentos.php?exp=' + items[i].id;
+  }
+  function pintar(){
+    Array.prototype.forEach.call(list.children, function(li, i){
+      li.classList.toggle('on', i === sel);
+    });
+  }
+  function mostrar(data){
+    items = data.items || [];
+    list.innerHTML = '';
+    if (!items.length) { cerrar(); return; }
+    items.forEach(function(it, i){
+      var li = document.createElement('li');
+      li.setAttribute('role','option');
+      li.id = 'ac-opt-' + i;
+      var tit = document.createElement('b');
+      tit.textContent = it.titulo || it.nro;
+      var meta = document.createElement('span');
+      meta.className = 'ac-meta';
+      var bits = [it.nro];
+      if (it.cui) bits.push('CUI ' + it.cui);
+      if (it.anio) bits.push(String(it.anio));
+      if (it.origen && etiq[it.origen]) bits.push(etiq[it.origen]);
+      meta.textContent = bits.join(' · ');
+      li.appendChild(tit);
+      li.appendChild(meta);
+      li.addEventListener('mousedown', function(ev){ ev.preventDefault(); ir(i); });
+      list.appendChild(li);
+    });
+    sel = 0;
+    list.hidden = false;
+    inp.setAttribute('aria-expanded','true');
+    pintar();
+  }
+  function pedir(){
+    var q = inp.value.trim();
+    if (q.length < 2) { cerrar(); return; }
+    if (ac) ac.abort();
+    ac = new AbortController();
+    fetch('buscar.php?sugerencias=1&q=' + encodeURIComponent(q), {signal: ac.signal})
+      .then(function(r){ return r.json(); })
+      .then(mostrar)
+      .catch(function(e){ if (e.name !== 'AbortError') cerrar(); });
+  }
+  inp.addEventListener('input', function(){
+    clearTimeout(t);
+    t = setTimeout(pedir, 180);
+  });
+  inp.addEventListener('keydown', function(ev){
+    if (list.hidden) return;
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); sel = Math.min(sel + 1, items.length - 1); pintar(); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); sel = Math.max(sel - 1, 0); pintar(); }
+    else if (ev.key === 'Enter' && sel >= 0 && items[sel]) { ev.preventDefault(); ir(sel); }
+    else if (ev.key === 'Escape') { cerrar(); }
+  });
+  inp.addEventListener('blur', function(){ setTimeout(cerrar, 120); });
+})();
+</script>
+</body></html>

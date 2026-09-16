@@ -75,6 +75,14 @@ foreach ($casos as $q => $tipo) {
 $idsV = array_column($vacio, 'id');
 in_array($expId, $idsV, true) ? fail('falso positivo en término inexistente') : ok('sin falso positivo');
 
+$sug = sugerencias_expedientes($db, 'Plaza', false, 8);
+$sugIds = array_column($sug, 'id');
+in_array($expId, $sugIds, true) ? ok('sugerencia «Plaza» encuentra el expediente') : fail('sugerencia Plaza no encontró el expediente');
+$sugCui = sugerencias_expedientes($db, '244', false, 8);
+in_array($expId, array_column($sugCui, 'id'), true) ? ok('sugerencia «244» por CUI') : fail('sugerencia CUI no encontró');
+$sugCorta = sugerencias_expedientes($db, 'P', false, 8);
+empty($sugCorta) ? ok('sugerencia ignora 1 carácter') : fail('sugerencia no debería disparar con 1 carácter');
+
 echo $fallos === 0 ? "\nTODOS LOS CHECKS OK\n" : "\n$fallos fallo(s)\n";
 exit($fallos === 0 ? 0 : 1);
 
