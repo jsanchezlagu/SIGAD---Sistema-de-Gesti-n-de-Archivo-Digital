@@ -34,10 +34,12 @@ CREATE TABLE estantes (
 CREATE TABLE expedientes (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     nro_expediente  VARCHAR(40)  NOT NULL UNIQUE,
+    cui             VARCHAR(40)  NOT NULL DEFAULT '',   -- Código Único de Inversión
     anio            INT          NOT NULL,
     fecha_expediente DATE        NULL,
     area_origen     VARCHAR(100) NOT NULL DEFAULT '',
     asunto          VARCHAR(255) NOT NULL DEFAULT '',
+    nombre_proyecto VARCHAR(255) NOT NULL DEFAULT '',   -- nombre de obra / proyecto (búsqueda)
     pabellon_id     INT NOT NULL,
     estante_id      INT NULL,
     folios          INT          NOT NULL DEFAULT 0,
@@ -50,7 +52,8 @@ CREATE TABLE expedientes (
     FOREIGN KEY (estante_id)  REFERENCES estantes(id) ON DELETE SET NULL,
     FOREIGN KEY (creado_por)  REFERENCES usuarios(id) ON DELETE SET NULL,
     FOREIGN KEY (aprobado_por) REFERENCES usuarios(id) ON DELETE SET NULL,
-    INDEX (anio), INDEX (estado)
+    INDEX (anio), INDEX (estado), INDEX idx_cui (cui),
+    FULLTEXT INDEX ft_exp (nro_expediente, cui, nombre_proyecto, asunto, area_origen)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE documentos (
@@ -61,14 +64,16 @@ CREATE TABLE documentos (
     tamano_bytes    BIGINT       NOT NULL DEFAULT 0,
     tamano_mb       DECIMAL(8,1) NOT NULL DEFAULT 0,
     hash_sha256     VARCHAR(64)  NOT NULL DEFAULT '',
-    texto           MEDIUMTEXT   NULL,              -- OCR de capa para busqueda
+    texto           MEDIUMTEXT   NULL,              -- texto extraído para búsqueda
+    texto_origen    VARCHAR(10)  NOT NULL DEFAULT '', -- capa | ocr | vacio
     paginas         INT          NOT NULL DEFAULT 0,
     version         INT          NOT NULL DEFAULT 1,
     subido_por      INT NULL,
     subido_en       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (expediente_id) REFERENCES expedientes(id) ON DELETE CASCADE,
     FOREIGN KEY (subido_por)    REFERENCES usuarios(id) ON DELETE SET NULL,
-    INDEX (hash_sha256)
+    INDEX (hash_sha256),
+    FULLTEXT INDEX ft_texto (texto)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE auditoria (

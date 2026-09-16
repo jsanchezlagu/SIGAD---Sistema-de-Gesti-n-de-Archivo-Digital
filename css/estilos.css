@@ -64,3 +64,14 @@ td{padding:8px;border-bottom:1px solid #f1f5f9}
 .btn-gray{background:#e2e8f0;color:#334155}
 .banner{background:#dbeafe;color:var(--azul2);border:1px solid #bfdbfe;padding:12px 16px;
   border-radius:10px;font-size:14px;margin-bottom:14px}
+.ayuda{font-size:12px;color:#64748b;margin:0 0 12px;line-height:1.45}
+.row .grow{flex:2;min-width:240px}
+.snippet{font-size:12px;color:#475569;background:#f8fafc;border-left:3px solid #93c5fd;
+  padding:6px 10px;margin-top:6px;border-radius:0 8px 8px 0}
+.snippet mark{background:#fde68a;padding:0 2px;border-radius:2px}
+.paginacion{display:flex;gap:8px;align-items:center;margin-top:14px}
+@media (max-width: 900px){
+  .side{position:relative;width:auto;bottom:auto}
+  .main{margin-left:0}
+  .grid4{grid-template-columns:1fr 1fr}
+}

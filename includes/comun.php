@@ -146,6 +146,7 @@ function requiere_login(): void {
         header("Location: $loc");
         exit;
     }
+    asegurar_esquema_busqueda();
 }
 
 /** True si puede escribir/modificar (ADMIN u OPERADOR). */
@@ -210,3 +211,5 @@ function json_out($data, int $code = 200): void {
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+require_once __DIR__ . '/busqueda.php';

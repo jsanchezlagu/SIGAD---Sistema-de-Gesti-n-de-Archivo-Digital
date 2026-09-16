@@ -10,7 +10,7 @@ $kpi = $db->query("SELECT
     (SELECT COALESCE(SUM(tamano_mb),0) FROM documentos) AS gb,
     (SELECT COUNT(*) FROM pabellones)             AS pab")->fetch();
 
-$ult = $db->prepare("SELECT e.id, e.nro_expediente, e.asunto, p.codigo AS pab, e.estado,
+$ult = $db->prepare("SELECT e.id, e.nro_expediente, e.cui, e.nombre_proyecto, e.asunto, p.codigo AS pab, e.estado,
                             (SELECT COUNT(*) FROM documentos d WHERE d.expediente_id=e.id) AS docs
                      FROM expedientes e JOIN pabellones p ON p.id=e.pabellon_id
                      " . (es_consulta() ? "WHERE e.estado='APROBADO' " : "") . "
@@ -110,11 +110,12 @@ if (es_consulta()) { $aprob = $db->query("SELECT COUNT(*) FROM expedientes WHERE
   <div class="card" style="margin-top:18px">
     <h3>Últimos expedientes</h3>
     <table>
-      <tr><th>N° Expediente</th><th>Asunto</th><th>Ubicación</th><th>Docs</th><th>Estado</th><th>Acción</th></tr>
+      <tr><th>N° Expediente</th><th>CUI</th><th>Proyecto / asunto</th><th>Ubicación</th><th>Docs</th><th>Estado</th><th>Acción</th></tr>
       <?php foreach ($ultimos as $e): ?>
       <tr>
         <td class="mono"><?= htmlspecialchars($e['nro_expediente']) ?></td>
-        <td><?= htmlspecialchars($e['asunto']) ?></td>
+        <td class="mono"><?= htmlspecialchars($e['cui'] ?: '—') ?></td>
+        <td><?= htmlspecialchars($e['nombre_proyecto'] ?: $e['asunto']) ?></td>
         <td class="mono"><?= htmlspecialchars($e['pab']) ?></td>
         <td><?= $e['docs'] ?></td>
         <td><span class="tag <?= $e['estado']==='APROBADO'?'t-ok':'t-warn' ?>"><?= $e['estado']==='APROBADO'?'Aprobado':'En proceso' ?></span></td>

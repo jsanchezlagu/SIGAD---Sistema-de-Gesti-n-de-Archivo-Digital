@@ -25,6 +25,7 @@ DirectoryIndex index.php
 RedirectMatch 404 (?i)^/config/
 RedirectMatch 404 (?i)^/includes/
 RedirectMatch 404 (?i)^/db/
+RedirectMatch 404 (?i)^/tests/
 RedirectMatch 404 (?i)^/\.git/
 
 # --- Limitar el tamaño de subida a nivel de servidor (defensa DoS) ---
