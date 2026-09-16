@@ -1,3 +1,4 @@
+<?php require_once 'config/config.php'; ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -18,14 +19,20 @@
       <span style="font-size:11px">Archivo Central</span></p>
     <?php if (isset($_GET['e'])): ?>
       <div class="login-err">
-        <?= $_GET['e'] == 2 ? 'Su cuenta está suspendida. Contacte al administrador.' : 'Usuario o contraseña incorrectos.' ?>
+        <?php
+          $cod = (int)($_GET['e'] ?? 0);
+          echo $cod === 2 ? 'Su cuenta está suspendida. Contacte al administrador.'
+             : ($cod === 3 ? 'Demasiados intentos fallidos. Espere unos minutos e inténtelo de nuevo.'
+             : 'Usuario o contraseña incorrectos.');
+        ?>
       </div>
     <?php endif; ?>
-    <form method="post" action="login.php">
+    <form method="post" action="login.php" autocomplete="off">
+      <?= csrf_field() ?>
       <label>Usuario</label>
-      <input name="username" autocomplete="username" value="superadmin">
+      <input name="username" autocomplete="username" autofocus>
       <label>Contraseña</label>
-      <input name="password" type="password" autocomplete="current-password" value="Sigad2026">
+      <input name="password" type="password" autocomplete="current-password">
       <button class="btn" type="submit">Ingresar</button>
     </form>
     <div class="pie-login">Municipalidad Distrital de San Marcos · Huari · Áncash</div>

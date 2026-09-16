@@ -11,10 +11,17 @@ $exp->execute([$id]);
 $exp = $exp->fetch();
 if (!$exp) { header('Location: buscar.php'); exit; }
 
+// Control de acceso: el rol CONSULTA sólo puede ver expedientes APROBADOS
+// (evita enumerar IDs para abrir expedientes en proceso — IDOR).
+if (es_consulta() && $exp['estado'] !== 'APROBADO') { header('Location: buscar.php'); exit; }
+
+// Toda acción que modifica datos exige un token CSRF válido.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') requiere_csrf();
+
 $mensaje = '';
-// ELIMINAR PDF equivocado (solo ADMIN/OPERADOR)
-if (isset($_GET['eliminar']) && puede_escribir()) {
-    $did = (int)$_GET['eliminar'];
+// ELIMINAR PDF equivocado (solo ADMIN/OPERADOR, por POST + CSRF)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar_id']) && puede_escribir()) {
+    $did = (int)$_POST['eliminar_id'];
     $d = $db->prepare("SELECT * FROM documentos WHERE id=? AND expediente_id=?");
     $d->execute([$did, $id]);
     if ($doc = $d->fetch()) {
@@ -26,8 +33,9 @@ if (isset($_GET['eliminar']) && puede_escribir()) {
     }
 }
 
-// RE-SUBIR el PDF correcto
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['archivo']['tmp_name'])) {
+// RE-SUBIR el PDF correcto (solo ADMIN/OPERADOR)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['eliminar_id'])
+    && puede_escribir() && !empty($_FILES['archivo']['tmp_name'])) {
     require_once 'includes/funciones.php';
     $sub = subir_pdf($_FILES['archivo'], $id, $db);
     $mensaje = $sub;
@@ -48,7 +56,7 @@ $docs = $docs->fetchAll();
     <?= nav_html('Buscar') ?>
   </nav>
   <div class="me"><b><?= htmlspecialchars($_SESSION['nombre']) ?></b><br><?= $_SESSION['rol'] ?>
-    <br><a href="logout.php" style="color:#60a5fa">Cerrar sesión</a></div>
+    <br><a href="<?= logout_href() ?>" style="color:#60a5fa">Cerrar sesión</a></div>
 </aside>
 <main class="main">
   <div class="top">
@@ -78,8 +86,13 @@ $docs = $docs->fetchAll();
           <td class="muted"><?= $d['subido_en'] ?></td>
           <td>
             <a class="btn-sm" href="descargar.php?id=<?= $d['id'] ?>" target="_blank">Ver</a>
-            <?php if (!es_consulta()): ?><a class="btn-sm btn-gray" href="documentos.php?exp=<?= $id ?>&eliminar=<?= $d['id'] ?>"
-               onclick="return confirm('¿Eliminar este PDF? Luego podrá subir el correcto.')">Eliminar</a><?php endif; ?>
+            <?php if (!es_consulta()): ?>
+            <form method="post" style="display:inline" onsubmit="return confirm('¿Eliminar este PDF? Luego podrá subir el correcto.')">
+              <?= csrf_field() ?>
+              <input type="hidden" name="eliminar_id" value="<?= $d['id'] ?>">
+              <button class="btn-sm btn-gray" type="submit">Eliminar</button>
+            </form>
+            <?php endif; ?>
           </td>
         </tr>
         <?php endforeach; ?>
@@ -89,6 +102,7 @@ $docs = $docs->fetchAll();
     <?php if (!es_consulta()): ?>
     <h3 style="margin-top:18px">Subir / corregir PDF (hasta 400 MB)</h3>
     <form method="post" enctype="multipart/form-data">
+      <?= csrf_field() ?>
       <input type="file" name="archivo" accept="application/pdf" required>
       <button class="btn-sm" style="margin-top:12px" type="submit">Guardar PDF</button>
     </form>

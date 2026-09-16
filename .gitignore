@@ -1,0 +1,10 @@
+# Marca de instalación (se crea en el servidor tras instalar)
+/config/instalado.lock
+
+# Carpeta de sesiones si el hosting la usa dentro del proyecto
+/tmp_sess/
+
+# Documentos subidos (ver uploads/.gitignore)
+/uploads/*
+!/uploads/.htaccess
+!/uploads/.gitignore

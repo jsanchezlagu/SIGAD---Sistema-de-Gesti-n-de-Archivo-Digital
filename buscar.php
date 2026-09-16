@@ -43,7 +43,7 @@ $anios = $db->query("SELECT DISTINCT anio FROM expedientes ORDER BY anio DESC")-
     <?= nav_html('Buscar') ?>
   </nav>
   <div class="me"><b><?= htmlspecialchars($_SESSION['nombre']) ?></b><br><?= $_SESSION['rol'] ?>
-    <br><a href="logout.php" style="color:#60a5fa">Cerrar sesión</a></div>
+    <br><a href="<?= logout_href() ?>" style="color:#60a5fa">Cerrar sesión</a></div>
 </aside>
 <main class="main">
   <div class="top"><h1>Buscar expediente</h1></div>
@@ -80,7 +80,11 @@ $anios = $db->query("SELECT DISTINCT anio FROM expedientes ORDER BY anio DESC")-
           <td>
             <a class="btn-sm" href="documentos.php?exp=<?= $e['id'] ?>">Docs</a>
             <?php if (es_admin() && $e['estado']!=='APROBADO'): ?>
-              <a class="btn-sm" href="aprobar.php?id=<?= $e['id'] ?>" onclick="return confirm('¿Aprobar este expediente?')">Aprobar</a>
+              <form method="post" action="aprobar.php" style="display:inline" onsubmit="return confirm('¿Aprobar este expediente?')">
+                <?= csrf_field() ?>
+                <input type="hidden" name="id" value="<?= $e['id'] ?>">
+                <button class="btn-sm" type="submit">Aprobar</button>
+              </form>
             <?php endif; ?>
           </td></tr>
       <?php endforeach; ?>
