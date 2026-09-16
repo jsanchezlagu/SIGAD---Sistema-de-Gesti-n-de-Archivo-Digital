@@ -28,9 +28,16 @@ RedirectMatch 404 (?i)^/db/
 RedirectMatch 404 (?i)^/tests/
 RedirectMatch 404 (?i)^/\.git/
 
-# --- Limitar el tamaño de subida a nivel de servidor (defensa DoS) ---
-# 400 MB por tomo, igual que valida la aplicación.
+# --- Tamaño de subida (400 MB por tomo) ---
+# cPanel con PHP-FPM ignora php_value aquí: use también .user.ini
+# o MultiPHP INI Editor. LiteSpeed / mod_php sí respetan estas líneas.
 <IfModule mod_php.c>
     php_value upload_max_filesize 400M
     php_value post_max_size 410M
+    php_value memory_limit 512M
+</IfModule>
+<IfModule lsapi_module>
+    php_value upload_max_filesize 400M
+    php_value post_max_size 410M
+    php_value memory_limit 512M
 </IfModule>
