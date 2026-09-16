@@ -114,6 +114,16 @@ INSERT INTO areas (codigo, nombre, descripcion) VALUES
  ('REG','Registro Civil','Nacimientos, defunciones, matrimonios'),
  ('SOC','Desarrollo Social','Programas sociales y comunidad');
 
+-- Control de intentos de inicio de sesion (defensa contra fuerza bruta)
+CREATE TABLE login_intentos (
+    id       INT AUTO_INCREMENT PRIMARY KEY,
+    usuario  VARCHAR(50)  NOT NULL DEFAULT '',
+    ip       VARCHAR(45)  NOT NULL DEFAULT '',
+    exito    TINYINT(1)   NOT NULL DEFAULT 0,
+    fecha    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX (usuario), INDEX (ip), INDEX (fecha)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Registro de busquedas para el ranking de "documentos mas buscados"
 CREATE TABLE busquedas (
     id            INT AUTO_INCREMENT PRIMARY KEY,

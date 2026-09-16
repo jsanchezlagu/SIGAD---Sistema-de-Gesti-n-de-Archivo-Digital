@@ -5,8 +5,12 @@ if (!es_admin()) { header('Location: panel.php'); exit; }
 $db = db();
 
 $mensaje = '';
+
+// Toda acción que modifica datos exige un token CSRF válido.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') requiere_csrf();
+
 // REGISTRAR / EDITAR AREA
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['eliminar_id'])) {
     $codigo = strtoupper(trim($_POST['codigo'] ?? ''));
     $nombre = trim($_POST['nombre'] ?? '');
     $desc   = trim($_POST['descripcion'] ?? '');
@@ -19,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->prepare("UPDATE areas SET codigo=?, nombre=?, descripcion=? WHERE id=?")
                ->execute([$codigo, $nombre, $desc, $id]);
             auditar('EDITO AREA', $codigo);
-            $mensaje = ['tipo'=>'ok','txt'=>"Área <b>{$nombre}</b> actualizada."];
+            $mensaje = ['tipo'=>'ok','txt'=>"Área <b>".htmlspecialchars($nombre)."</b> actualizada."];
         } else {
             $chk = $db->prepare("SELECT id FROM areas WHERE codigo=?");
             $chk->execute([$codigo]);
@@ -29,21 +33,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->prepare("INSERT INTO areas (codigo, nombre, descripcion) VALUES (?,?,?)")
                    ->execute([$codigo, $nombre, $desc]);
                 auditar('CREO AREA', $codigo);
-                $mensaje = ['tipo'=>'ok','txt'=>"Área <b>{$nombre}</b> registrada."];
+                $mensaje = ['tipo'=>'ok','txt'=>"Área <b>".htmlspecialchars($nombre)."</b> registrada."];
             }
         }
     }
 }
 
-// ELIMINAR
-if (isset($_GET['eliminar'])) {
-    $did = (int)$_GET['eliminar'];
+// ELIMINAR (sólo por POST + CSRF)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar_id'])) {
+    $did = (int)$_POST['eliminar_id'];
     $a = $db->prepare("SELECT nombre FROM areas WHERE id=?");
     $a->execute([$did]); $a = $a->fetch();
     if ($a) {
         $db->prepare("DELETE FROM areas WHERE id=?")->execute([$did]);
         auditar('ELIMINO AREA', $a['nombre']);
-        $mensaje = ['tipo'=>'ok','txt'=>"Área <b>{$a['nombre']}</b> eliminada."];
+        $mensaje = ['tipo'=>'ok','txt'=>"Área <b>".htmlspecialchars($a['nombre'])."</b> eliminada."];
     }
 }
 
@@ -69,7 +73,7 @@ $areas = $db->query("SELECT a.*, (SELECT COUNT(*) FROM usuarios u WHERE u.cargo=
     <?= nav_html('Áreas') ?>
   </nav>
   <div class="me"><b><?= htmlspecialchars($_SESSION['nombre']) ?></b><br><?= $_SESSION['rol'] ?>
-    <br><a href="logout.php" style="color:#60a5fa">Cerrar sesión</a></div>
+    <br><a href="<?= logout_href() ?>" style="color:#60a5fa">Cerrar sesión</a></div>
 </aside>
 <main class="main">
   <div class="top"><h1>Áreas de la Municipalidad</h1>
@@ -86,6 +90,7 @@ $areas = $db->query("SELECT a.*, (SELECT COUNT(*) FROM usuarios u WHERE u.cargo=
   <div class="card" id="frm" style="display:<?= $edit ? 'block':'none' ?>;margin-bottom:18px">
     <h3><?= $edit ? 'Editar área' : 'Registrar nueva área' ?></h3>
     <form method="post">
+      <?= csrf_field() ?>
       <input type="hidden" name="id" value="<?= $edit['id'] ?? '' ?>">
       <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px">
         <label>Código (ej. GER, REN)<input name="codigo" required value="<?= htmlspecialchars($edit['codigo'] ?? '') ?>"
@@ -108,7 +113,11 @@ $areas = $db->query("SELECT a.*, (SELECT COUNT(*) FROM usuarios u WHERE u.cargo=
         <td><?= $a['us'] ?></td><td><?= number_format($a['exp']) ?></td>
         <td>
           <a class="btn-sm" href="areas.php?editar=<?= $a['id'] ?>">Editar</a>
-          <a class="btn-sm btn-gray" href="areas.php?eliminar=<?= $a['id'] ?>" onclick="return confirm('¿Eliminar esta área?')">Eliminar</a>
+          <form method="post" style="display:inline" onsubmit="return confirm('¿Eliminar esta área?')">
+            <?= csrf_field() ?>
+            <input type="hidden" name="eliminar_id" value="<?= $a['id'] ?>">
+            <button class="btn-sm btn-gray" type="submit">Eliminar</button>
+          </form>
         </td></tr>
     <?php endforeach; ?>
     <?php if (empty($areas)): ?><tr><td colspan="6" class="muted">Aún no hay áreas registradas.</td></tr><?php endif; ?>

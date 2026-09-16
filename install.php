@@ -9,13 +9,17 @@ $configFile = $base . '/config/config.php';
 $error = '';
 $done  = false;
 
-// ¿Ya instalado? (config.php existe y tiene DB_NAME definido por el usuario)
-if (is_file($configFile) && strpos(file_get_contents($configFile), 'DB_USER') !== false
-    && !isset($_POST['reinstalar'])) {
-    // permitir reinstalar con bandera
-}
+// Bloqueo anti-reinstalación: una vez instalado se crea config/instalado.lock.
+// Mientras exista, install.php NO vuelve a ejecutar (evita que un atacante
+// reescriba config.php o resetee el administrador). Lo ideal es ELIMINAR
+// install.php tras instalar; el lock es una segunda barrera.
+$lockFile = $base . '/config/instalado.lock';
+$yaInstalado = is_file($lockFile);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $yaInstalado) {
+    $error = 'El sistema ya está instalado. Por seguridad ELIMINE install.php del servidor. '
+           . 'Para reinstalar de forma intencional, borre primero el archivo config/instalado.lock.';
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $host = trim($_POST['db_host'] ?? 'localhost');
     $name = trim($_POST['db_name'] ?? '');
     $user = trim($_POST['db_user'] ?? '');
@@ -66,8 +70,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ->execute([$adm, $hash]);
             }
 
-            // escribir config.php
-            $tpl = "<?php\n";
+            // escribir config.php (SOLO credenciales/constantes: toda la lógica
+            // de seguridad vive en includes/comun.php, así el sitio instalado
+            // queda igual de endurecido que el del repositorio)
+            $tpl  = "<?php\n";
             $tpl .= "define('DB_HOST',     " . var_export($host, true) . ");\n";
             $tpl .= "define('DB_NAME',     " . var_export($name, true) . ");\n";
             $tpl .= "define('DB_USER',     " . var_export($user, true) . ");\n";
@@ -78,36 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tpl .= "define('RUTA_BASE',   dirname(__DIR__));\n";
             $tpl .= "define('RUTA_UPLOADS', RUTA_BASE . '/uploads');\n";
             $tpl .= "define('URL_UPLOADS', 'uploads');\n\n";
-            $tpl .= "if (session_status() === PHP_SESSION_NONE) {\n";
-            $tpl .= "    \$sp = RUTA_BASE . '/tmp_sess';\n";
-            $tpl .= "    if (!is_dir(\$sp)) @mkdir(\$sp, 0777, true);\n";
-            $tpl .= "    if (is_dir(\$sp) && is_writable(\$sp)) session_save_path(\$sp);\n";
-            $tpl .= "    session_start();\n}\n\n";
-            $tpl .= "function db(): PDO {\n";
-            $tpl .= "    static \$pdo;\n";
-            $tpl .= "    if (\$pdo) return \$pdo;\n";
-            $tpl .= "    \$dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET;\n";
-            $tpl .= "    \$pdo = new PDO(\$dsn, DB_USER, DB_PASS, [\n";
-            $tpl .= "        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,\n";
-            $tpl .= "        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]);\n";
-            $tpl .= "    return \$pdo;\n}\n\n";
-            $tpl .= "function auditar(string \$accion, string \$detalle = ''): void {\n";
-            $tpl .= "    if (!isset(\$_SESSION['uid'])) return;\n";
-            $tpl .= "    \$ip = \$_SERVER['REMOTE_ADDR'] ?? '';\n";
-            $tpl .= "    \$u = db()->prepare(\"INSERT INTO auditoria (usuario_id, username, accion, detalle, ip) VALUES (?,?,?,?,?)\");\n";
-            $tpl .= "    \$u->execute([\$_SESSION['uid'], \$_SESSION['user'], \$accion, \$detalle, \$ip]);\n}\n\n";
-            $tpl .= "function requiere_login(): void {\n";
-            $tpl .= "    if (empty(\$_SESSION['uid'])) { header('Location: index.php'); exit; }\n}\n";
-            $tpl .= "function puede_escribir(): bool { return in_array(\$_SESSION['rol'] ?? '', ['ADMIN','OPERADOR']); }\n";
-            $tpl .= "function es_admin(): bool { return (\$_SESSION['rol'] ?? '') === 'ADMIN'; }\n";
-            $tpl .= "function es_consulta(): bool { return (\$_SESSION['rol'] ?? '') === 'CONSULTA'; }\n";
-            $tpl .= "function json_out(\$data, int \$code = 200): void {\n";
-            $tpl .= "    http_response_code(\$code); header('Content-Type: application/json; charset=utf-8');\n";
-            $tpl .= "    echo json_encode(\$data, JSON_UNESCAPED_UNICODE); exit;\n}\n";
+            $tpl .= "require_once RUTA_BASE . '/includes/comun.php';\n";
             file_put_contents($configFile, $tpl);
 
             // permisos de uploads
             @chmod($base . '/uploads', 0755);
+
+            // Crear el lock anti-reinstalación
+            @file_put_contents($lockFile, date('c') . " · instalado por " . ($adm ?: 'admin') . "\n");
             $done = true;
         } catch (Throwable $e) {
             $error = 'Error: ' . $e->getMessage();
@@ -122,6 +106,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div style="background:#fff;border-radius:14px;padding:30px;width:440px;box-shadow:0 20px 60px rgba(0,0,0,.4)">
   <h1 style="color:#0f2d5c;margin:0 0 4px;letter-spacing:2px">SIGAD</h1>
   <p style="color:#64748b;margin:0 0 18px;font-size:13px">Instalación automática</p>
+  <?php if ($yaInstalado && !$done): ?>
+    <div style="background:#fef9c3;color:#854d0e;border:1px solid #fde047;padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px">
+      <b>El sistema ya está instalado.</b><br>
+      Por seguridad, <b>elimine <code>install.php</code></b> del servidor.
+      Para reinstalar de forma intencional, borre primero <code>config/instalado.lock</code>.
+    </div>
+  <?php endif; ?>
   <?php if ($done): ?>
     <div class="banner" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:12px;border-radius:8px">
       ¡Instalado correctamente! <b>Elimine install.php</b> por seguridad.

@@ -10,6 +10,7 @@ $areas = $db->query("SELECT codigo, nombre FROM areas ORDER BY nombre")->fetchAl
 
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requiere_csrf();
     $nro   = trim($_POST['nro_expediente'] ?? '');
     $asun  = trim($_POST['asunto'] ?? '');
     $area  = trim($_POST['area_origen'] ?? '');
@@ -70,13 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?= nav_html('Registrar') ?>
   </nav>
   <div class="me"><b><?= htmlspecialchars($_SESSION['nombre']) ?></b><br><?= $_SESSION['rol'] ?>
-    <br><a href="logout.php" style="color:#60a5fa">Cerrar sesión</a></div>
+    <br><a href="<?= logout_href() ?>" style="color:#60a5fa">Cerrar sesión</a></div>
 </aside>
 <main class="main">
   <div class="top"><h1>Registrar expediente</h1></div>
   <?php if ($msg): ?><div class="banner"><?= htmlspecialchars($msg) ?></div><?php endif; ?>
   <div class="card">
     <form method="post" enctype="multipart/form-data">
+    <?= csrf_field() ?>
     <h3>1. Datos del expediente</h3>
     <div class="row">
       <div><label>N° de expediente *</label><input name="nro_expediente" placeholder="EXP-2026-000001"></div>

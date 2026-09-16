@@ -6,6 +6,9 @@ $db = db();
 
 $mensaje = '';
 
+// Toda acción que modifica datos exige un token CSRF válido.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') requiere_csrf();
+
 // REGISTRAR NUEVO USUARIO (solo ADMIN)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['edit_id'])) {
     $username = trim($_POST['username'] ?? '');
@@ -33,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['edit_id'])) {
                 VALUES (?,?,?,?,?,?,?, NOW())")
                 ->execute([$username, $hash, $nombres, $apellidos, $area, $rol, $activo]);
             auditar('CREO USUARIO', "{$username} ({$rol})");
-            $mensaje = ['tipo'=>'ok','txt'=>"Usuario <b>{$username}</b> registrado como {$rol}."];
+            $mensaje = ['tipo'=>'ok','txt'=>"Usuario <b>".htmlspecialchars($username)."</b> registrado como {$rol}."];
         }
     }
 }
@@ -89,7 +92,7 @@ $us = $db->query("SELECT id, username, CONCAT(nombres,' ',apellidos) nombre,
     <?= nav_html('Usuarios') ?>
   </nav>
   <div class="me"><b><?= htmlspecialchars($_SESSION['nombre']) ?></b><br><?= $_SESSION['rol'] ?>
-    <br><a href="logout.php" style="color:#60a5fa">Cerrar sesión</a></div>
+    <br><a href="<?= logout_href() ?>" style="color:#60a5fa">Cerrar sesión</a></div>
 </aside>
 <main class="main">
   <div class="top"><h1>Usuarios</h1>
@@ -106,6 +109,7 @@ $us = $db->query("SELECT id, username, CONCAT(nombres,' ',apellidos) nombre,
   <div class="card" id="frm" style="display:<?= $edit ? 'block':'none' ?>;margin-bottom:18px">
     <h3><?= $edit ? 'Modificar usuario: '.htmlspecialchars($edit['username']) : 'Registrar nuevo usuario' ?></h3>
     <form method="post">
+      <?= csrf_field() ?>
       <?php if ($edit): ?><input type="hidden" name="edit_id" value="<?= $edit['id'] ?>"><?php endif; ?>
       <?php if (!$edit): ?>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">

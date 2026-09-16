@@ -60,7 +60,7 @@ if (es_consulta()) { $aprob = $db->query("SELECT COUNT(*) FROM expedientes WHERE
   <div class="me">
     <b><?= htmlspecialchars($_SESSION['nombre']) ?></b><br>
     <?= $_SESSION['rol'] ?><br>
-    <a href="logout.php" style="color:#60a5fa">Cerrar sesión</a>
+    <a href="<?= logout_href() ?>" style="color:#60a5fa">Cerrar sesión</a>
   </div>
 </aside>
 <main class="main">
@@ -120,7 +120,11 @@ if (es_consulta()) { $aprob = $db->query("SELECT COUNT(*) FROM expedientes WHERE
         <td><span class="tag <?= $e['estado']==='APROBADO'?'t-ok':'t-warn' ?>"><?= $e['estado']==='APROBADO'?'Aprobado':'En proceso' ?></span></td>
         <td>
           <?php if (es_admin() && $e['estado']!=='APROBADO'): ?>
-            <a class="btn-sm" href="aprobar.php?id=<?= $e['id'] ?>" onclick="return confirm('¿Aprobar este expediente?')">Aprobar</a>
+            <form method="post" action="aprobar.php" style="display:inline" onsubmit="return confirm('¿Aprobar este expediente?')">
+              <?= csrf_field() ?>
+              <input type="hidden" name="id" value="<?= $e['id'] ?>">
+              <button class="btn-sm" type="submit">Aprobar</button>
+            </form>
           <?php else: ?><span class="muted">—</span><?php endif; ?>
         </td>
       </tr>
