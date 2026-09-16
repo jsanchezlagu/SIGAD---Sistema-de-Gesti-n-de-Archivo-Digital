@@ -52,6 +52,7 @@ strlen(trim($ext['texto'])) > 20
     : fail('pdftotext no extrajo texto: ' . json_encode($ext));
 
 $_SESSION['uid'] = $uid;
+$_SESSION['user'] = 'admin';
 $r = subir_pdf(['name'=>'plaza.pdf','tmp_name'=>$pdf,'error'=>0,'size'=>filesize($pdf),'type'=>'application/pdf'], $expId, $db);
 str_contains($r, 'PDF subido') ? ok("subir_pdf: $r") : fail("subir_pdf: $r");
 
@@ -65,9 +66,9 @@ $casos = [
 foreach ($casos as $q => $tipo) {
     [$filas, $total] = buscar_expedientes($db, $q, '', '', false, 1, 25);
     $ids = array_column($filas, 'id');
-    in_array($expId, $ids, true)
-        ? ok("búsqueda «$q» ($tipo) → $total hit(s), origen=" . ($filas[0]['origen'] ?? ''))
-        : fail("búsqueda «$q» ($tipo) no encontró el expediente");
+            in_array($expId, $ids, true)
+        ? ok("búsqueda «{$q}» ({$tipo}) → {$total} hit(s), origen=" . ($filas[0]['origen'] ?? ''))
+        : fail("búsqueda «{$q}» ({$tipo}) no encontró el expediente");
 }
 
 [$vacio, $t0] = buscar_expedientes($db, 'xyzzy-no-existe-sigad-9f3a', '', '', false, 1, 25);

@@ -133,7 +133,7 @@ function auditar(string $accion, string $detalle = ''): void {
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
     $u  = db()->prepare("INSERT INTO auditoria (usuario_id, username, accion, detalle, ip)
                          VALUES (?,?,?,?,?)");
-    $u->execute([$_SESSION['uid'], $_SESSION['user'], $accion, $detalle, $ip]);
+    $u->execute([$_SESSION['uid'], $_SESSION['user'] ?? '', $accion, $detalle, $ip]);
 }
 
 /* ------------------------------------------------------------------ *

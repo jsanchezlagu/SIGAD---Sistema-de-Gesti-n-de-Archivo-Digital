@@ -65,6 +65,7 @@ function snippet_coincidencia(?string $texto, string $q, int $radio = 90): strin
     if ($ini + $radio * 2 < mb_strlen($texto)) $frag .= '…';
     $safe = htmlspecialchars($frag, ENT_QUOTES, 'UTF-8');
     foreach (tokens_busqueda($q) as $t) {
+        if (mb_strlen($t) < 3) continue;
         $safe = preg_replace(
             '/(' . preg_quote($t, '/') . ')/iu',
             '<mark>$1</mark>',
@@ -302,11 +303,10 @@ function origen_coincidencia(array $r, string $q): string {
     $cuiN = preg_replace('/[^A-Za-z0-9]/', '', $n) ?? '';
     $nro  = normalizar_texto((string)($r['nro_expediente'] ?? ''));
     $cui  = preg_replace('/[^A-Za-z0-9]/', '', normalizar_texto((string)($r['cui'] ?? ''))) ?? '';
-    if ($cuiN !== '' && (
-        ($cui !== '' && str_contains($cui, $cuiN))
-        || str_contains($nro, $cuiN)
-        || str_contains($nro, $n)
-    )) {
+    if ($cui !== '' && $cuiN !== '' && (str_contains($cui, $cuiN) || str_contains($cuiN, $cui))) {
+        return 'código';
+    }
+    if (str_contains($nro, $n) || ($cuiN !== '' && str_contains($nro, $cuiN))) {
         return 'código';
     }
     if (str_contains(normalizar_texto((string)($r['nombre_proyecto'] ?? '')), $n)
@@ -320,8 +320,11 @@ function origen_coincidencia(array $r, string $q): string {
 
 function tokens_en(string $campo, string $q): bool {
     $hay = normalizar_texto($campo);
+    $ok = false;
     foreach (tokens_busqueda($q) as $t) {
-        if (str_contains($hay, $t)) return true;
+        if (mb_strlen($t) < 3) continue; // ignora "de", "la", "el"
+        if (str_contains($hay, $t)) $ok = true;
+        else return false;
     }
-    return false;
+    return $ok;
 }
