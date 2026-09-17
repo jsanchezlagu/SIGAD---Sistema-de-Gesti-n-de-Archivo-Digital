@@ -14,7 +14,8 @@ Si aún ve superadmin, los archivos nuevos NO están en la carpeta del subdomini
    cPanel → Subdomains (o Dominios) → sigad.jeftech.net.pe → Document Root
    Suele ser public_html/sigad  o  sigad.jeftech.net.pe
    NO extraiga en public_html si el subdominio apunta a otra carpeta.
-   NO extraiga la carpeta sigad_instalable ni el ZIP de GitHub "Code".
+   NO extraiga la carpeta sigad_instalable ni el botón verde Code de GitHub.
+   El paquete correcto es sigad-cpanel.zip (vea DESCARGAR-GITHUB.txt).
 
 2. Extraer el ZIP dentro de esa carpeta (no una carpeta adentro)
    Debe quedar junto a los archivos viejos:

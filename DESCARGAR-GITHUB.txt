@@ -1,0 +1,15 @@
+Descargar SIGAD para cPanel
+===========================
+
+Archivo: sigad-cpanel.zip
+
+En GitHub (rama cursor/login-sin-error-500-d619):
+https://github.com/jsanchezlagu/SIGAD---Sistema-de-Gesti-n-de-Archivo-Digital/blob/cursor/login-sin-error-500-d619/sigad-cpanel.zip
+
+Descarga directa:
+https://github.com/jsanchezlagu/SIGAD---Sistema-de-Gesti-n-de-Archivo-Digital/raw/cursor/login-sin-error-500-d619/sigad-cpanel.zip
+
+Guárdelo en: E:\Portafolio_sistemas\sigad-cpanel.zip
+
+NO use el botón verde Code → Download ZIP (ese comprime todo el repositorio
+y deja una carpeta adentro; no es el paquete de cPanel).
