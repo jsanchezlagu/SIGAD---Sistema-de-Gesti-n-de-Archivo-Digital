@@ -1,0 +1,49 @@
+SIGAD · Cómo subirlo a cPanel con MySQL
+========================================
+
+Requisitos
+- PHP 8.1 o superior (cPanel → MultiPHP Manager)
+- Extensiones: pdo_mysql, mbstring
+- MySQL o MariaDB (cPanel → MySQL Databases)
+
+1. Crear la base de datos
+   cPanel → MySQL Databases
+   - Base: sigad          → quedará como USUARIO_sigad
+   - Usuario: sigad       → quedará como USUARIO_sigad
+   - Asignar el usuario a la base con ALL PRIVILEGES
+   Anote los tres datos: nombre BD, usuario y clave.
+   El servidor es casi siempre: localhost
+
+2. Subir los archivos
+   Administrador de archivos (o FTP) → public_html
+   - Opción A: carpeta public_html/sigad/  (URL: https://sudominio.pe/sigad/)
+   - Opción B: la raíz public_html/        (URL: https://sudominio.pe/)
+   Suba el ZIP y Extraer. NO suba la carpeta sigad_instalable.
+   Debe verse index.php, install.php, config/, db/, includes/, css/, assets/, uploads/
+
+3. Permisos
+   Carpetas: 755
+   uploads/ : 755 (escribible)
+   config/  : 755 (escribible para que el instalador cree config.php)
+
+4. Instalar
+   Abra https://sudominio.pe/sigad/install.php
+   Complete host localhost + los datos de MySQL + un admin y su clave.
+   Al terminar ELIMINE install.php.
+
+5. Tamaño de PDF (400 MB)
+   cPanel → MultiPHP INI Editor:
+     upload_max_filesize = 400M
+     post_max_size       = 410M
+     memory_limit        = 512M
+   El archivo .user.ini ya trae esos valores; si no aplican, use el editor.
+
+6. Entrar
+   https://sudominio.pe/sigad/
+   Usuario y clave los que puso en el instalador (no deje admin/Sigad2026).
+
+Si algo falla
+- "Access denied": el usuario MySQL no está asignado a esa BD.
+- "Unknown database": cree la BD en MySQL Databases; no intente crearla a mano.
+- Página en blanco: MultiPHP 8.1+ y pdo_mysql activo.
+- No sube el PDF: suba upload_max_filesize en MultiPHP INI Editor.

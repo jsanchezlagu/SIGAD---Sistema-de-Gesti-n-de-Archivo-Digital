@@ -1,0 +1,4 @@
+# No versionar los documentos subidos; sí las reglas de protección.
+*
+!.htaccess
+!.gitignore

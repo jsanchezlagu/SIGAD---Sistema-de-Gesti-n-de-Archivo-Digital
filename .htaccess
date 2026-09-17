@@ -1,0 +1,49 @@
+# SIGAD · Apache / cPanel · endurecimiento base
+# --------------------------------------------------------------------------
+
+# No listar el contenido de los directorios
+Options -Indexes
+
+# Evita que se sirva index.php al pedir un directorio sin archivo (usa index.php)
+DirectoryIndex index.php
+
+# --- Cabeceras de seguridad (además de las que envía PHP) ---
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "no-referrer"
+    Header always unset X-Powered-By
+    Header unset X-Powered-By
+</IfModule>
+
+# --- Bloquear acceso directo a archivos y carpetas sensibles ---
+# Credenciales, esquema SQL y núcleo PHP no deben servirse nunca por HTTP.
+<FilesMatch "(^\.|\.(sql|md|sh|json|lock|ini|log|bak|inc)$)">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+RedirectMatch 404 (?i)^/config/
+RedirectMatch 404 (?i)^/includes/
+RedirectMatch 404 (?i)^/db/
+RedirectMatch 404 (?i)^/tests/
+RedirectMatch 404 (?i)^/\.git/
+
+# --- Tamaño de subida (400 MB por tomo) ---
+# cPanel con PHP-FPM ignora php_value aquí: use también .user.ini
+# o MultiPHP INI Editor. LiteSpeed / mod_php sí respetan estas líneas.
+<IfModule mod_php.c>
+    php_value upload_max_filesize 400M
+    php_value post_max_size 410M
+    php_value memory_limit 512M
+</IfModule>
+<IfModule lsapi_module>
+    php_value upload_max_filesize 400M
+    php_value post_max_size 410M
+    php_value memory_limit 512M
+</IfModule>

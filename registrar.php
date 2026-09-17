@@ -10,7 +10,10 @@ $areas = $db->query("SELECT codigo, nombre FROM areas ORDER BY nombre")->fetchAl
 
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requiere_csrf();
     $nro   = trim($_POST['nro_expediente'] ?? '');
+    $cui   = strtoupper(trim($_POST['cui'] ?? ''));
+    $proy  = trim($_POST['nombre_proyecto'] ?? '');
     $asun  = trim($_POST['asunto'] ?? '');
     $area  = trim($_POST['area_origen'] ?? '');
     $fecha = trim($_POST['fecha_expediente'] ?? '');
@@ -28,9 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = "El número $nro ya existe.";
         } else {
             $db->prepare("INSERT INTO expedientes
-                (nro_expediente, anio, fecha_expediente, area_origen, asunto, pabellon_id, estante_id, folios, creado_por)
-                VALUES (?,?,?,?,?,?,?,?,?)")
-               ->execute([$nro, $anio, $fecha ?: null, $area, $asun, $pab, $est, $folios, $_SESSION['uid']]);
+                (nro_expediente, cui, anio, fecha_expediente, area_origen, asunto, nombre_proyecto, pabellon_id, estante_id, folios, creado_por)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+               ->execute([$nro, $cui, $anio, $fecha ?: null, $area, $asun, $proy, $pab, $est, $folios, $_SESSION['uid']]);
             $exp_id = $db->lastInsertId();
             auditar('CREO EXPEDIENTE', $nro);
             $msg = "Expediente $nro registrado (ID $exp_id).";
@@ -61,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="assets/logo-msm.png"><link rel="stylesheet" href="css/estilos.css">
 <title>SIGAD · Registrar</title></head>
 <body class="app"><aside class="side">
@@ -70,16 +74,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?= nav_html('Registrar') ?>
   </nav>
   <div class="me"><b><?= htmlspecialchars($_SESSION['nombre']) ?></b><br><?= $_SESSION['rol'] ?>
-    <br><a href="logout.php" style="color:#60a5fa">Cerrar sesión</a></div>
+    <br><a href="<?= logout_href() ?>" style="color:#60a5fa">Cerrar sesión</a></div>
 </aside>
 <main class="main">
   <div class="top"><h1>Registrar expediente</h1></div>
   <?php if ($msg): ?><div class="banner"><?= htmlspecialchars($msg) ?></div><?php endif; ?>
   <div class="card">
     <form method="post" enctype="multipart/form-data">
+    <?= csrf_field() ?>
     <h3>1. Datos del expediente</h3>
     <div class="row">
       <div><label>N° de expediente *</label><input name="nro_expediente" placeholder="EXP-2026-000001"></div>
+      <div><label>CUI (código único de inversión)</label>
+        <input name="cui" placeholder="Ej. 2445678" maxlength="40"></div>
       <div>
         <label>Fecha del expediente *</label>
         <input type="date" name="fecha_expediente" id="fexp" required
@@ -92,6 +99,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <?php foreach ($areas as $a): ?><option value="<?= htmlspecialchars($a['nombre']) ?>"><?= htmlspecialchars($a['nombre']) ?></option><?php endforeach; ?>
         </select></div>
     </div>
+    <div class="row" style="margin-top:10px">
+      <div class="grow"><label>Nombre del proyecto / obra</label>
+        <input name="nombre_proyecto" placeholder="Ej. Mejoramiento de la Plaza de Armas de San Marcos"></div>
+    </div>
+    <p class="ayuda">El CUI y el nombre del proyecto permiten encontrar expedientes antiguos aunque nadie recuerde el código EXP. Si el PDF es un escaneo sin texto, estos campos son la forma de localizarlo.</p>
     <div class="row" style="margin-top:10px">
       <div style="flex:2"><label>Asunto *</label><input name="asunto" placeholder="Descripción"></div>
       <div><label>Pabellón *</label>

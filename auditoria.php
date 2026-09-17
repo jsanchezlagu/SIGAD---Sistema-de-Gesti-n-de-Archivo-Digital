@@ -15,7 +15,7 @@ $aud = $db->query("SELECT username, accion, detalle, ip, fecha FROM auditoria OR
     <?= nav_html('Auditoría') ?>
   </nav>
   <div class="me"><b><?= htmlspecialchars($_SESSION['nombre']) ?></b><br><?= $_SESSION['rol'] ?>
-    <br><a href="logout.php" style="color:#60a5fa">Cerrar sesión</a></div>
+    <br><a href="<?= logout_href() ?>" style="color:#60a5fa">Cerrar sesión</a></div>
 </aside>
 <main class="main">
   <div class="top"><h1>Auditoría</h1><span class="muted"><?= count($aud) ?> registros</span></div>

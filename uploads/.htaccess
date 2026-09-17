@@ -1,0 +1,21 @@
+# SIGAD · uploads/ — NUNCA servir estos archivos directamente por HTTP.
+# Los PDF se entregan sólo a través de descargar.php, que exige sesión y
+# comprueba el rol/estado del expediente. Esto evita:
+#   - descargar PDFs sin autenticación adivinando el nombre del archivo, y
+#   - la ejecución de cualquier código subido a esta carpeta.
+
+# Bloquear TODO acceso directo (Apache 2.4). Esta es la protección principal.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+# Compatibilidad Apache 2.2
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>
+
+# Defensa en profundidad: nunca tratar nada de esta carpeta como script.
+# (RemoveHandler/RemoveType/AddType sí están permitidos en .htaccess.)
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .cgi .pl
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8
+AddType text/plain .php .phtml .php3 .php4 .php5 .php7 .php8

@@ -6,8 +6,11 @@ $db = db();
 
 $mensaje = '';
 
+// Toda acción que modifica datos exige un token CSRF válido.
+if ($_SERVER['REQUEST_METHOD'] === 'POST') requiere_csrf();
+
 // REGISTRAR / EDITAR PABELLON (+ estantes)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['eliminar_id'])) {
     $codigo = strtoupper(trim($_POST['codigo'] ?? ''));
     $nombre = trim($_POST['nombre'] ?? '');
     $ubi    = trim($_POST['ubicacion'] ?? '');
@@ -43,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->prepare("INSERT INTO estantes (pabellon_id, codigo) VALUES (?,?)")
                    ->execute([$id, strtoupper($ests[$i])]);
             }
-            $mensaje = ['tipo'=>'ok','txt'=>"Pabellón <b>{$nombre}</b> actualizado."];
+            $mensaje = ['tipo'=>'ok','txt'=>"Pabellón <b>".htmlspecialchars($nombre)."</b> actualizado."];
         } else {
             $chk = $db->prepare("SELECT id FROM pabellones WHERE codigo=?");
             $chk->execute([$codigo]);
@@ -58,22 +61,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $db->prepare("INSERT INTO estantes (pabellon_id, codigo) VALUES (?,?)")
                        ->execute([$nid, strtoupper($c)]);
                 }
-                $mensaje = ['tipo'=>'ok','txt'=>"Pabellón <b>{$nombre}</b> registrado."];
+                $mensaje = ['tipo'=>'ok','txt'=>"Pabellón <b>".htmlspecialchars($nombre)."</b> registrado."];
             }
         }
     }
 }
 
-// ELIMINAR (con sus estantes)
-if (isset($_GET['eliminar'])) {
-    $did = (int)$_GET['eliminar'];
+// ELIMINAR (con sus estantes; sólo por POST + CSRF)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['eliminar_id'])) {
+    $did = (int)$_POST['eliminar_id'];
     $p = $db->prepare("SELECT nombre FROM pabellones WHERE id=?");
     $p->execute([$did]); $p = $p->fetch();
     if ($p) {
         $db->prepare("DELETE FROM estantes WHERE pabellon_id=?")->execute([$did]);
         $db->prepare("DELETE FROM pabellones WHERE id=?")->execute([$did]);
         auditar('ELIMINO PABELLON', $p['nombre']);
-        $mensaje = ['tipo'=>'ok','txt'=>"Pabellón <b>{$p['nombre']}</b> eliminado."];
+        $mensaje = ['tipo'=>'ok','txt'=>"Pabellón <b>".htmlspecialchars($p['nombre'])."</b> eliminado."];
     }
 }
 
@@ -104,7 +107,7 @@ $pabs = $db->query("SELECT p.id, p.codigo, p.nombre, p.ubicacion,
     <?= nav_html('Pabellones') ?>
   </nav>
   <div class="me"><b><?= htmlspecialchars($_SESSION['nombre']) ?></b><br><?= $_SESSION['rol'] ?>
-    <br><a href="logout.php" style="color:#60a5fa">Cerrar sesión</a></div>
+    <br><a href="<?= logout_href() ?>" style="color:#60a5fa">Cerrar sesión</a></div>
 </aside>
 <main class="main">
   <div class="top"><h1>Pabellones</h1>
@@ -121,6 +124,7 @@ $pabs = $db->query("SELECT p.id, p.codigo, p.nombre, p.ubicacion,
   <div class="card" id="frm" style="display:<?= $edit ? 'block':'none' ?>;margin-bottom:18px">
     <h3><?= $edit ? 'Editar pabellón' : 'Registrar nuevo pabellón' ?></h3>
     <form method="post">
+      <?= csrf_field() ?>
       <input type="hidden" name="id" value="<?= $edit['id'] ?? '' ?>">
       <div style="display:grid;grid-template-columns:1fr 3fr;gap:10px">
         <label>Código (ej. PAB-A)<input name="codigo" required value="<?= htmlspecialchars($edit['codigo'] ?? '') ?>"
@@ -160,7 +164,11 @@ $pabs = $db->query("SELECT p.id, p.codigo, p.nombre, p.ubicacion,
         <td><?= $p['est'] ?></td><td><?= number_format($p['exp']) ?></td>
         <td>
           <a class="btn-sm" href="pabellones.php?editar=<?= $p['id'] ?>">Editar</a>
-          <a class="btn-sm btn-gray" href="pabellones.php?eliminar=<?= $p['id'] ?>" onclick="return confirm('¿Eliminar este pabellón y sus estantes?')">Eliminar</a>
+          <form method="post" style="display:inline" onsubmit="return confirm('¿Eliminar este pabellón y sus estantes?')">
+            <?= csrf_field() ?>
+            <input type="hidden" name="eliminar_id" value="<?= $p['id'] ?>">
+            <button class="btn-sm btn-gray" type="submit">Eliminar</button>
+          </form>
         </td></tr>
     <?php endforeach; ?>
     <?php if (empty($pabs)): ?><tr><td colspan="6" class="muted">Aún no hay pabellones registrados.</td></tr><?php endif; ?>
