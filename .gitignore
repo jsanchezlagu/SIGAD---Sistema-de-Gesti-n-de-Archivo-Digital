@@ -1,4 +1,5 @@
-# Marca de instalación (se crea en el servidor tras instalar)
+# Credenciales reales (las escribe install.php; no van en el ZIP)
+/config/config.local.php
 /config/instalado.lock
 
 # Carpeta de sesiones si el hosting la usa dentro del proyecto

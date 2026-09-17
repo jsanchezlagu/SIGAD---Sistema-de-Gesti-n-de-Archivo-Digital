@@ -1,0 +1,41 @@
+SIGAD · Cómo subirlo a cPanel (si Chrome muestra HTTP 500)
+==========================================================
+
+El error 500 al pulsar Ingresar aparece cuando el servidor sigue usando el
+login.php ANTIGUO (el que redirige y trae usuario "superadmin" ya escrito)
+y config.php tiene usuario/clave de MySQL incorrectos (el ZIP los pisa).
+
+Qué debe verse cuando la versión nueva está en su sitio
+- Campos de usuario y contraseña VACÍOS (no "superadmin" / "Sigad2026")
+- En el código HTML: <!-- SIGAD-LOGIN-V2 -->
+Si aún ve superadmin, los archivos nuevos NO están en la carpeta del subdominio.
+
+1. Averiguar la carpeta del subdominio
+   cPanel → Subdomains (o Dominios) → sigad.jeftech.net.pe → Document Root
+   Suele ser public_html/sigad  o  sigad.jeftech.net.pe
+   NO extraiga en public_html si el subdominio apunta a otra carpeta.
+   NO extraiga la carpeta sigad_instalable ni el botón verde Code de GitHub.
+   El paquete correcto es sigad-cpanel.zip (vea DESCARGAR-GITHUB.txt).
+
+2. Extraer el ZIP dentro de esa carpeta (no una carpeta adentro)
+   Debe quedar junto a los archivos viejos:
+     index.php  login.php  install.php  includes/  config/  css/  assets/  db/
+   Si File Manager no reemplaza, BORRE primero estos archivos (no la BD):
+     login.php  index.php  install.php
+   y vuelva a Extraer. NO borre config/config.local.php si ya existe.
+
+3. Reparar la conexión (aunque la base se haya creado por la mañana)
+   Abra https://sigad.jeftech.net.pe/install.php
+   Ponga los datos EXACTOS de cPanel → MySQL Databases (usuario_sigad).
+   Esto NO borra expedientes: solo vuelve a grabar usuario y clave.
+   NO elimine install.php hasta que el login funcione.
+
+4. Entrar
+   https://sigad.jeftech.net.pe/   (mejor que /login.php)
+   Usuario y clave los del instalador, no superadmin.
+
+Si algo falla
+- Sigue "superadmin" en el formulario: el ZIP se extrae en otra carpeta.
+- Aviso rojo de MySQL (ya no 500): install.php con los datos de cPanel.
+- "Access denied": el usuario MySQL no está asignado a esa BD (All Privileges).
+- PHP: MultiPHP Manager 8.1+ y extensión pdo_mysql.

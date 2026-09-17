@@ -7,12 +7,14 @@ mkdir -p "$(dirname "$OUT")"
 rm -f "$OUT"
 cd "$ROOT"
 zip -r "$OUT" . \
-  -x '.git/*' \
-  -x 'sigad_instalable/*' \
-  -x 'tests/*' \
-  -x 'uploads/*.pdf' \
-  -x 'tmp_sess/*' \
-  -x '.cursor/*' \
-  -x '*.zip'
+    -x '.git/*' \
+    -x 'sigad_instalable/*' \
+    -x 'tests/*' \
+    -x 'uploads/*.pdf' \
+    -x 'tmp_sess/*' \
+    -x '.cursor/*' \
+    -x '*.zip' \
+    -x 'config/config.local.php' \
+    -x 'config/instalado.lock'
 echo "Paquete: $OUT"
 unzip -l "$OUT" | tail -5

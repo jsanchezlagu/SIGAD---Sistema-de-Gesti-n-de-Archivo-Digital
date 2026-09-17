@@ -1,8 +1,7 @@
 <?php
 /**
- * Cargador de configuración SIGAD.
- * Las credenciales de MySQL viven en config.local.php (lo escribe install.php).
- * El ZIP de cPanel NO incluye config.local.php, para no borrarlas al volver a subir.
+ * Ejemplo de cargador. install.php copia esto a config.php si falta.
+ * Las credenciales reales se guardan en config.local.php.
  */
 if (is_file(__DIR__ . '/config.local.php')) {
     require_once __DIR__ . '/config.local.php';
