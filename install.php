@@ -1,16 +1,18 @@
 <?php
 /**
- * Instalador SIGAD para cPanel + MySQL.
- * 1) Cree la BD y el usuario en cPanel → MySQL Databases (All Privileges).
- * 2) Suba los archivos y abra /install.php
- * 3) ELIMINE este archivo al terminar.
+ * Instalador / reparador SIGAD para cPanel + MySQL.
+ * - Primera vez: crea tablas y el administrador.
+ * - Si la BD ya existe: solo reescribe la conexión (no borra expedientes).
+ * Elimine este archivo cuando el login ya funcione.
  */
 $base = __DIR__;
 $configFile = $base . '/config/config.php';
+$localFile  = $base . '/config/config.local.php';
+$ejemploFile = $base . '/config/config.ejemplo.php';
 $lockFile   = $base . '/config/instalado.lock';
 $error = '';
 $done  = false;
-$yaInstalado = is_file($lockFile);
+$yaInstalado = is_file($lockFile) || is_file($localFile);
 
 $phpOk = version_compare(PHP_VERSION, '8.1.0', '>=');
 $pdoOk = extension_loaded('pdo_mysql');
@@ -44,11 +46,42 @@ function sigad_ejecutar_sql(PDO $pdo, string $raw): void {
     $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
 }
 
+function sigad_escribir_loader(string $configFile, string $ejemploFile): void {
+    $src = is_readable($ejemploFile)
+        ? (string)file_get_contents($ejemploFile)
+        : "<?php\nif (is_file(__DIR__ . '/config.local.php')) require_once __DIR__ . '/config.local.php';\n"
+          . "if (!defined('DB_HOST')) define('DB_HOST', 'localhost');\n"
+          . "if (!defined('DB_NAME')) define('DB_NAME', 'sigad');\n"
+          . "if (!defined('DB_USER')) define('DB_USER', 'sigad_user');\n"
+          . "if (!defined('DB_PASS')) define('DB_PASS', 'sigad_pass');\n"
+          . "if (!defined('DB_CHARSET')) define('DB_CHARSET', 'utf8mb4');\n"
+          . "if (!defined('APP_NOMBRE')) define('APP_NOMBRE', 'SIGAD');\n"
+          . "if (!defined('ENTIDAD')) define('ENTIDAD', 'MUNICIPALIDAD DISTRITAL DE SAN MARCOS');\n"
+          . "if (!defined('RUTA_BASE')) define('RUTA_BASE', dirname(__DIR__));\n"
+          . "if (!defined('RUTA_UPLOADS')) define('RUTA_UPLOADS', RUTA_BASE . '/uploads');\n"
+          . "if (!defined('URL_UPLOADS')) define('URL_UPLOADS', 'uploads');\n"
+          . "require_once RUTA_BASE . '/includes/comun.php';\n";
+    if (file_put_contents($configFile, $src) === false) {
+        throw new RuntimeException('No se pudo escribir config/config.php.');
+    }
+}
+
+function sigad_escribir_local(string $localFile, string $host, string $name, string $user, string $pass, string $ent): void {
+    $tpl  = "<?php\n";
+    $tpl .= "define('DB_HOST',    " . var_export($host, true) . ");\n";
+    $tpl .= "define('DB_NAME',    " . var_export($name, true) . ");\n";
+    $tpl .= "define('DB_USER',    " . var_export($user, true) . ");\n";
+    $tpl .= "define('DB_PASS',    " . var_export($pass, true) . ");\n";
+    $tpl .= "define('DB_CHARSET', 'utf8mb4');\n";
+    $tpl .= "define('ENTIDAD',    " . var_export($ent, true) . ");\n";
+    if (file_put_contents($localFile, $tpl) === false) {
+        throw new RuntimeException('No se pudo escribir config/config.local.php.');
+    }
+}
+
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-if ($method === 'POST' && $yaInstalado) {
-    $error = 'El sistema ya está instalado. Elimine install.php del servidor.';
-} elseif ($method === 'POST') {
+if ($method === 'POST') {
     if (!$phpOk) {
         $error = 'Se requiere PHP 8.1 o superior. En cPanel use MultiPHP Manager.';
     } elseif (!$pdoOk) {
@@ -62,9 +95,13 @@ if ($method === 'POST' && $yaInstalado) {
             $adm  = trim((string)($_POST['admin_user'] ?? 'admin'));
             $admPass = (string)($_POST['admin_pass'] ?? '');
             $ent  = trim((string)($_POST['entidad'] ?? 'MUNICIPALIDAD DISTRITAL DE SAN MARCOS'));
+            $soloConexion = isset($_POST['solo_conexion']) || $yaInstalado;
 
-            if ($adm === '' || strlen($admPass) < 8) {
+            if (!$soloConexion && ($adm === '' || strlen($admPass) < 8)) {
                 throw new InvalidArgumentException('El administrador necesita usuario y una clave de al menos 8 caracteres.');
+            }
+            if ($soloConexion && $admPass !== '' && strlen($admPass) < 8) {
+                throw new InvalidArgumentException('Si cambia la clave del administrador, use al menos 8 caracteres.');
             }
             if (!is_dir($base . '/config') || !is_writable($base . '/config')) {
                 throw new RuntimeException('La carpeta config/ no tiene permiso de escritura (chmod 755).');
@@ -94,41 +131,31 @@ if ($method === 'POST' && $yaInstalado) {
             if (!is_readable($sqlFile)) {
                 throw new RuntimeException('No se encontró db/sigad.sql. Suba la carpeta db/ completa.');
             }
+            // CREATE TABLE IF NOT EXISTS / INSERT IGNORE: no borra datos existentes.
             sigad_ejecutar_sql($pdo, (string)file_get_contents($sqlFile));
 
-            $hash = password_hash($admPass, PASSWORD_DEFAULT);
-            $chk = $pdo->prepare('SELECT id FROM usuarios WHERE username=?');
-            $chk->execute([$adm]);
-            if ($chk->fetch()) {
-                $pdo->prepare("UPDATE usuarios SET password=?, rol='ADMIN', activo=1 WHERE username=?")
-                    ->execute([$hash, $adm]);
-            } else {
-                $pdo->prepare("INSERT INTO usuarios (username,password,nombres,apellidos,cargo,rol,activo)
-                    VALUES (?,?, 'Admin','Sistema','Administrador del sistema', 'ADMIN', 1)")
-                    ->execute([$adm, $hash]);
+            if ($adm !== '' && $admPass !== '') {
+                $hash = password_hash($admPass, PASSWORD_DEFAULT);
+                $chk = $pdo->prepare('SELECT id FROM usuarios WHERE username=?');
+                $chk->execute([$adm]);
+                if ($chk->fetch()) {
+                    $pdo->prepare("UPDATE usuarios SET password=?, rol='ADMIN', activo=1 WHERE username=?")
+                        ->execute([$hash, $adm]);
+                } else {
+                    $pdo->prepare("INSERT INTO usuarios (username,password,nombres,apellidos,cargo,rol,activo)
+                        VALUES (?,?, 'Admin','Sistema','Administrador del sistema', 'ADMIN', 1)")
+                        ->execute([$adm, $hash]);
+                }
             }
 
-            $tpl  = "<?php\n";
-            $tpl .= "define('DB_HOST',     " . var_export($host, true) . ");\n";
-            $tpl .= "define('DB_NAME',     " . var_export($name, true) . ");\n";
-            $tpl .= "define('DB_USER',     " . var_export($user, true) . ");\n";
-            $tpl .= "define('DB_PASS',     " . var_export($pass, true) . ");\n";
-            $tpl .= "define('DB_CHARSET',  'utf8mb4');\n\n";
-            $tpl .= "define('APP_NOMBRE',  'SIGAD');\n";
-            $tpl .= "define('ENTIDAD',     " . var_export($ent, true) . ");\n";
-            $tpl .= "define('RUTA_BASE',   dirname(__DIR__));\n";
-            $tpl .= "define('RUTA_UPLOADS', RUTA_BASE . '/uploads');\n";
-            $tpl .= "define('URL_UPLOADS', 'uploads');\n\n";
-            $tpl .= "require_once RUTA_BASE . '/includes/comun.php';\n";
-            if (file_put_contents($configFile, $tpl) === false) {
-                throw new RuntimeException('No se pudo escribir config/config.php.');
-            }
+            sigad_escribir_local($localFile, $host, $name, $user, $pass, $ent);
+            sigad_escribir_loader($configFile, $ejemploFile);
 
             $up = $base . '/uploads';
             if (!is_dir($up)) mkdir($up, 0755, true);
             @chmod($up, 0755);
 
-            file_put_contents($lockFile, date('c') . " · instalado por " . $adm . "\n");
+            file_put_contents($lockFile, date('c') . " · instalado/reparado por " . ($adm !== '' ? $adm : 'cPanel') . "\n");
             $done = true;
         } catch (Throwable $e) {
             $error = $e->getMessage();
@@ -143,9 +170,9 @@ if ($method === 'POST' && $yaInstalado) {
 <body style="background:#0f2d5c;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px">
 <div style="background:#fff;border-radius:14px;padding:30px;width:520px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4)">
   <h1 style="color:#0f2d5c;margin:0 0 4px;letter-spacing:2px">SIGAD</h1>
-  <p style="color:#64748b;margin:0 0 14px;font-size:13px">Instalación en cPanel · MySQL</p>
+  <p style="color:#64748b;margin:0 0 14px;font-size:13px"><?= $yaInstalado ? 'Reparar conexión MySQL · cPanel' : 'Instalación en cPanel · MySQL' ?></p>
 
-  <p class="ayuda">En cPanel → <b>MySQL Databases</b> cree la base y el usuario, asígneles <b>All Privileges</b> y copie aquí los nombres exactos (casi siempre <code>usuario_sigad</code>). El servidor es <code>localhost</code>.</p>
+  <p class="ayuda">En cPanel → <b>MySQL Databases</b> copie el nombre de la base, el usuario y la clave (casi siempre <code>usuario_sigad</code>). El servidor es <code>localhost</code>. Si la base ya se creó por la mañana, este formulario <b>no borra expedientes</b>: solo vuelve a grabar la conexión.</p>
 
   <?php if (!$phpOk): ?>
     <div style="background:#fee2e2;color:#991b1b;padding:9px;border-radius:7px;font-size:13px;margin-bottom:12px">
@@ -158,21 +185,16 @@ if ($method === 'POST' && $yaInstalado) {
     </div>
   <?php endif; ?>
 
-  <?php if ($yaInstalado && !$done): ?>
-    <div style="background:#fef9c3;color:#854d0e;border:1px solid #fde047;padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px">
-      <b>El sistema ya está instalado.</b> Elimine <code>install.php</code> del servidor.
-    </div>
-  <?php endif; ?>
   <?php if ($done): ?>
     <div class="banner" style="background:#dcfce7;color:#15803d;border:1px solid #86efac;padding:12px;border-radius:8px">
-      Instalado. <b>Elimine install.php</b> ahora (Administrador de archivos → Delete).
-      En MultiPHP INI Editor deje <code>upload_max_filesize=400M</code> y <code>post_max_size=410M</code>.
+      Conexión grabada. Pruebe el login. Cuando entre, <b>elimine install.php</b> (Administrador de archivos → Delete).
     </div>
     <a class="btn" href="index.php" style="display:block;text-align:center;margin-top:16px;
        background:#0f2d5c;color:#fff;padding:11px;border-radius:8px;text-decoration:none;font-weight:700">Ir al login</a>
-  <?php elseif (!$yaInstalado): ?>
+  <?php else: ?>
     <?php if ($error): ?><div style="background:#fee2e2;color:#991b1b;padding:9px;border-radius:7px;font-size:13px;margin-bottom:12px"><?= htmlspecialchars($error) ?></div><?php endif; ?>
     <form method="post" autocomplete="off">
+      <?php if ($yaInstalado): ?><input type="hidden" name="solo_conexion" value="1"><?php endif; ?>
       <label style="font-size:12px;font-weight:600;color:#334155">Servidor MySQL</label>
       <input name="db_host" value="localhost" required style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;margin:4px 0 10px">
       <label style="font-size:12px;font-weight:600;color:#334155">Nombre de la base (cPanel)</label>
@@ -182,13 +204,13 @@ if ($method === 'POST' && $yaInstalado) {
       <label style="font-size:12px;font-weight:600;color:#334155">Clave MySQL</label>
       <input name="db_pass" type="password" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;margin:4px 0 10px">
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:12px 0">
-      <label style="font-size:12px;font-weight:600;color:#334155">Usuario administrador SIGAD</label>
-      <input name="admin_user" value="admin" required style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;margin:4px 0 10px">
-      <label style="font-size:12px;font-weight:600;color:#334155">Clave del administrador (mín. 8)</label>
-      <input name="admin_pass" type="password" required minlength="8" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;margin:4px 0 10px">
+      <label style="font-size:12px;font-weight:600;color:#334155">Usuario administrador SIGAD<?= $yaInstalado ? ' (opcional)' : '' ?></label>
+      <input name="admin_user" value="admin" <?= $yaInstalado ? '' : 'required' ?> style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;margin:4px 0 10px">
+      <label style="font-size:12px;font-weight:600;color:#334155">Clave del administrador<?= $yaInstalado ? ' (vacío = no cambiar)' : ' (mín. 8)' ?></label>
+      <input name="admin_pass" type="password" <?= $yaInstalado ? '' : 'required minlength="8"' ?> style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;margin:4px 0 10px">
       <label style="font-size:12px;font-weight:600;color:#334155">Nombre de la entidad</label>
       <input name="entidad" value="MUNICIPALIDAD DISTRITAL DE SAN MARCOS" style="width:100%;padding:9px;border:1px solid #e2e8f0;border-radius:8px;margin:4px 0 14px">
-      <button type="submit" style="width:100%;padding:11px;border:0;border-radius:8px;background:#0f2d5c;color:#fff;font-weight:700;cursor:pointer">Instalar en MySQL</button>
+      <button type="submit" style="width:100%;padding:11px;border:0;border-radius:8px;background:#0f2d5c;color:#fff;font-weight:700;cursor:pointer"><?= $yaInstalado ? 'Grabar conexión MySQL' : 'Instalar en MySQL' ?></button>
     </form>
   <?php endif; ?>
 </div></body></html>

@@ -68,8 +68,12 @@ function db(): PDO {
         return $pdo;
     } catch (PDOException $e) {
         error_log('SIGAD MySQL: ' . $e->getMessage());
-        if (PHP_SAPI !== 'cli' && !headers_sent()) {
-            header('Location: login.php?e=4');
+        $script = basename((string)($_SERVER['SCRIPT_NAME'] ?? ''));
+        // En login/index/install el llamador muestra el aviso. Un redirect
+        // aquí dejaría HTTP 500 si el login.php del servidor es el antiguo.
+        $enIngreso = in_array($script, ['login.php', 'index.php', 'install.php'], true);
+        if (PHP_SAPI !== 'cli' && !headers_sent() && !$enIngreso) {
+            header('Location: index.php?e=4');
             exit;
         }
         throw $e;

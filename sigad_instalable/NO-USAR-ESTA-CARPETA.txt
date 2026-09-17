@@ -1,0 +1,6 @@
+NO USE ESTA CARPETA
+===================
+
+sigad_instalable es una copia antigua. En cPanel extraiga el ZIP
+sigad-cpanel.zip (o los archivos de la RAÍZ del repositorio) dentro
+de la carpeta del subdominio. Siga 00-LEA-ESTO.txt.

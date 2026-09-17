@@ -18,14 +18,16 @@
       <span style="font-size:11px">Archivo Central</span></p>
     <?php if (isset($_GET['e'])): ?>
       <div class="login-err">
-        <?= $_GET['e'] == 2 ? 'Su cuenta está suspendida. Contacte al administrador.' : 'Usuario o contraseña incorrectos.' ?>
+        <?= $_GET['e'] == 2 ? 'Su cuenta está suspendida. Contacte al administrador.'
+           : ($_GET['e'] == 4 ? 'No se pudo conectar a MySQL. Abra install.php y use los datos de cPanel.'
+           : 'Usuario o contraseña incorrectos.') ?>
       </div>
     <?php endif; ?>
     <form method="post" action="login.php">
       <label>Usuario</label>
-      <input name="username" autocomplete="username" value="superadmin">
+      <input name="username" autocomplete="username" autofocus>
       <label>Contraseña</label>
-      <input name="password" type="password" autocomplete="current-password" value="Sigad2026">
+      <input name="password" type="password" autocomplete="current-password">
       <button class="btn" type="submit">Ingresar</button>
     </form>
     <div class="pie-login">Municipalidad Distrital de San Marcos · Huari · Áncash</div>
