@@ -23,7 +23,8 @@
           $cod = (int)($_GET['e'] ?? 0);
           echo $cod === 2 ? 'Su cuenta está suspendida. Contacte al administrador.'
              : ($cod === 3 ? 'Demasiados intentos fallidos. Espere unos minutos e inténtelo de nuevo.'
-             : 'Usuario o contraseña incorrectos.');
+             : ($cod === 4 ? 'No se pudo conectar a MySQL. Abra install.php y use el usuario, la clave y el nombre de la BD de cPanel (MySQL Databases).'
+             : 'Usuario o contraseña incorrectos.'));
         ?>
       </div>
     <?php endif; ?>

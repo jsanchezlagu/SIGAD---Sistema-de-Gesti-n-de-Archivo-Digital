@@ -2,6 +2,7 @@
 require_once 'config/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
     // 1) Protección CSRF
     if (!csrf_check()) {
         header('Location: index.php?e=1'); exit;
@@ -51,5 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     elseif (es_consulta()) header('Location: buscar.php');         // solo buscar
     else                   header('Location: panel.php');          // operador
     exit;
+    } catch (Throwable $e) {
+        error_log('SIGAD login: ' . $e->getMessage());
+        header('Location: index.php?e=4');
+        exit;
+    }
 }
 header('Location: index.php');

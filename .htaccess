@@ -19,7 +19,13 @@ DirectoryIndex index.php
 # --- Bloquear acceso directo a archivos y carpetas sensibles ---
 # Credenciales, esquema SQL y núcleo PHP no deben servirse nunca por HTTP.
 <FilesMatch "(^\.|\.(sql|md|sh|json|lock|ini|log|bak|inc)$)">
-    Require all denied
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
 
 RedirectMatch 404 (?i)^/config/
