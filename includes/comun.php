@@ -69,7 +69,7 @@ function db(): PDO {
     } catch (PDOException $e) {
         error_log('SIGAD MySQL: ' . $e->getMessage());
         if (PHP_SAPI !== 'cli' && !headers_sent()) {
-            header('Location: index.php?e=4');
+            header('Location: login.php?e=4');
             exit;
         }
         throw $e;
