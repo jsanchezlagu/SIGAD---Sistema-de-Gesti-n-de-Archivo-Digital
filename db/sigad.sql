@@ -139,3 +139,17 @@ CREATE TABLE IF NOT EXISTS busquedas (
     FOREIGN KEY (usuario_id)    REFERENCES usuarios(id) ON DELETE SET NULL,
     INDEX (fecha)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Eventos del monitor de desarrollador (errores PHP / MySQL / login)
+CREATE TABLE IF NOT EXISTS monitor_eventos (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    tipo       VARCHAR(40)  NOT NULL DEFAULT 'evento',
+    nivel      VARCHAR(10)  NOT NULL DEFAULT 'info',
+    mensaje    VARCHAR(2000) NOT NULL DEFAULT '',
+    archivo    VARCHAR(255) NOT NULL DEFAULT '',
+    linea      INT          NOT NULL DEFAULT 0,
+    ip         VARCHAR(45)  NOT NULL DEFAULT '',
+    usuario    VARCHAR(50)  NOT NULL DEFAULT '',
+    fecha      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX (fecha), INDEX (nivel), INDEX (tipo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
