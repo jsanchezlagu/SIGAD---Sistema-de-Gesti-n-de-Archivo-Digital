@@ -68,7 +68,12 @@ function db(): PDO {
         return $pdo;
     } catch (PDOException $e) {
         error_log('SIGAD MySQL: ' . $e->getMessage());
-        if (PHP_SAPI !== 'cli' && !headers_sent()) {
+        if (function_exists('monitor_registrar')) {
+            monitor_registrar('mysql', 'error', $e->getMessage());
+        }
+        $script = basename((string)($_SERVER['SCRIPT_NAME'] ?? ''));
+        $enLogin = in_array($script, ['login.php', 'index.php', 'install.php', 'monitor.php'], true);
+        if (PHP_SAPI !== 'cli' && !headers_sent() && !$enLogin) {
             header('Location: login.php?e=4');
             exit;
         }
@@ -199,6 +204,7 @@ function nav_html(string $pagina): string {
         $items[] = ['Usuarios',  'usuarios.php'];
         $items[] = ['Áreas',     'areas.php'];
         $items[] = ['Auditoría', 'auditoria.php'];
+        $items[] = ['Monitor',   'monitor.php'];
     }
     $html = '';
     foreach ($items as [$nombre, $href]) {
@@ -222,3 +228,5 @@ function json_out($data, int $code = 200): void {
 }
 
 require_once __DIR__ . '/busqueda.php';
+require_once __DIR__ . '/monitor.php';
+monitor_instalar_manejadores();

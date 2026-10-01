@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $err === '') {
                 $u = $st->fetch();
                 if (!$u || !password_verify($pass, $u['password'])) {
                     if (function_exists('registrar_intento_login')) registrar_intento_login($user, false);
+                    if (function_exists('monitor_registrar')) monitor_registrar('login', 'aviso', 'Intento fallido: ' . $user);
                     $err = 'Usuario o contraseña incorrectos.';
                 } elseif (empty($u['activo'])) {
                     if (function_exists('registrar_intento_login')) registrar_intento_login($user, false);
@@ -54,6 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $err === '') {
         }
     } catch (Throwable $e) {
         error_log('SIGAD login: ' . $e->getMessage());
+        if (function_exists('monitor_registrar')) {
+            monitor_registrar('login', 'error', $e->getMessage());
+        }
         $err = 'No se pudo conectar a MySQL. En cPanel abra install.php y use el usuario, la clave y el nombre exactos de la BD (MySQL Databases). Servidor: localhost.';
     }
 }

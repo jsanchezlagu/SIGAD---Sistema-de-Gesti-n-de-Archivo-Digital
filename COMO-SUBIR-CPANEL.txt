@@ -42,6 +42,13 @@ Requisitos
    https://sudominio.pe/sigad/
    Usuario y clave los que puso en el instalador (no deje admin/Sigad2026).
 
+7. Monitor de desarrollador
+   Con usuario ADMIN, menú → Monitor.
+   También: https://sigad.jeftech.net.pe/monitor.php?k=CLAVE
+   La clave se crea sola en config/monitor.key (el instalador la muestra).
+   JSON de salud: monitor.php?k=CLAVE&fmt=json  (HTTP 200 = en línea).
+   No publica datos fuera del servidor.
+
 Si algo falla
 - "Access denied": el usuario MySQL no está asignado a esa BD.
 - "Unknown database": cree la BD en MySQL Databases; no intente crearla a mano.

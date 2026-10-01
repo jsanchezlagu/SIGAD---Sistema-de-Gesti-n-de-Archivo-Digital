@@ -1,5 +1,7 @@
 # Marca de instalación (se crea en el servidor tras instalar)
 /config/instalado.lock
+/config/monitor.key
+/config/monitor.log
 
 # Carpeta de sesiones si el hosting la usa dentro del proyecto
 /tmp_sess/

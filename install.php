@@ -11,6 +11,7 @@ $lockFile   = $base . '/config/instalado.lock';
 $error = '';
 $done  = false;
 $yaInstalado = is_file($lockFile);
+$monitorUrl = '';
 
 $phpOk = version_compare(PHP_VERSION, '8.1.0', '>=');
 $pdoOk = extension_loaded('pdo_mysql');
@@ -129,7 +130,10 @@ if ($method === 'POST' && $yaInstalado) {
             @chmod($up, 0755);
 
             file_put_contents($lockFile, date('c') . " · instalado por " . $adm . "\n");
+            $monKey = bin2hex(random_bytes(32));
+            @file_put_contents($base . '/config/monitor.key', $monKey . "\n");
             $done = true;
+            $monitorUrl = 'monitor.php?k=' . $monKey;
         } catch (Throwable $e) {
             $error = $e->getMessage();
         }
@@ -168,6 +172,11 @@ if ($method === 'POST' && $yaInstalado) {
       Instalado. <b>Elimine install.php</b> ahora (Administrador de archivos → Delete).
       En MultiPHP INI Editor deje <code>upload_max_filesize=400M</code> y <code>post_max_size=410M</code>.
     </div>
+    <?php if (!empty($monitorUrl)): ?>
+    <p class="ayuda" style="margin-top:14px">Monitor de desarrollador (guárdelo; no lo publique):<br>
+      <a href="<?= htmlspecialchars($monitorUrl) ?>"><?= htmlspecialchars($monitorUrl) ?></a>
+    </p>
+    <?php endif; ?>
     <a class="btn" href="index.php" style="display:block;text-align:center;margin-top:16px;
        background:#0f2d5c;color:#fff;padding:11px;border-radius:8px;text-decoration:none;font-weight:700">Ir al login</a>
   <?php elseif (!$yaInstalado): ?>
